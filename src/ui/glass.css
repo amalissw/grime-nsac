@@ -387,11 +387,62 @@ button {
   flex-direction: row;
   position: relative;
 }
+#globe-layout {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+}
+#globe-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 400px;
+}
+#globe-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
 #globe-container {
   flex: 1;
   position: relative;
   overflow: hidden;
 }
+#point-card {
+  position: absolute;
+  bottom: 80px;
+  left: 16px;
+  min-width: 200px;
+  max-width: 280px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+}
+.point-place { font-weight: 600; font-size: 0.9rem; }
+.point-value { font-size: 1.1rem; color: var(--accent); font-weight: 700; }
+.point-level { font-size: 0.8rem; }
+.event-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 10px;
+}
+.event-item:hover { background: rgba(255,255,255,0.8); }
+.event-icon { font-size: 1.25rem; flex-shrink: 0; }
+.event-body { flex: 1; min-width: 0; }
+.event-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-meta { font-size: 0.75rem; color: var(--text-2); }
+.event-level {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.event-empty { color: var(--text-2); font-size: 0.85rem; text-align: center; padding: 16px; }
 #globe-year-label {
   position: absolute;
   top: 20px;
@@ -774,6 +825,96 @@ button {
   #globe-year-label { font-size: 4rem; }
   #continents-panel { display: none; }
 }
+
+/* ---- Danger bar ---- */
+.danger-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.danger-bar::before { content: ''; }
+.danger-bar[aria-valuenow] {
+  background: linear-gradient(to right, #22C55E, #A3E635, #FACC15, #F97316, #DC2626);
+  height: 6px;
+  border-radius: 3px;
+  width: 100%;
+}
+
+/* ---- Year slider bar ---- */
+#year-slider-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+}
+.year-label { font: 700 1.25rem/1 'Manrope', sans-serif; color: var(--accent); }
+.year-slider-input {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--glass-border);
+  outline: none;
+}
+.year-slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.year-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--text-2);
+  padding: 0 2px;
+}
+
+/* ---- Continent buttons ---- */
+.continent-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 16px;
+}
+.continent-btn { flex-direction: column; gap: 4px; padding: 20px 12px; }
+
+/* ---- Guide cards ---- */
+.guide-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+.guide-card {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+}
+.guide-card-icon { font-size: 2rem; flex-shrink: 0; }
+.guide-card-desc { font-size: 0.875rem; color: var(--text-2); line-height: 1.6; }
+
+/* ---- Intro / pages ---- */
+.intro-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px 24px;
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.intro-title { font-size: 2rem; font-weight: 700; }
+.intro-body { color: var(--text-2); line-height: 1.6; }
+.page-title { font-size: 1.5rem; font-weight: 700; padding: 20px 20px 0; }
+#continents-layout { display: flex; flex-direction: column; }
+#continent-player { margin: 0 16px 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+#continent-year-bar { display: flex; align-items: center; gap: 8px; }
+#continent-year-bar .year-label { min-width: 40px; }
+#continent-status { font-size: 0.85rem; color: var(--text-2); min-height: 20px; }
+#guide-layout { display: flex; flex-direction: column; }
 
 /* ---- Motion preferences ---- */
 @media (prefers-reduced-motion: reduce) {

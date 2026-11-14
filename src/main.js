@@ -16,6 +16,7 @@ import { unlockSpeech, say } from './audio/speech.js';
 import { vibrate } from './audio/haptics.js';
 import { loadAllData } from './data/loader.js';
 import { setData } from './data/query.js';
+import { initGlobe } from './pages/globe.js';
 
 // ── i18n strings ────────────────────────────────────────────────────────────
 const I18N = {
@@ -475,9 +476,14 @@ async function boot() {
   setupContinentPage();
 
   // Subscribe to page changes from router
+  let _globeInited = false;
   subscribe('page', page => {
     if (page === 'start') return;
     activatePage(page);
+    if (page === 'globe' && !_globeInited) {
+      _globeInited = true;
+      setTimeout(initGlobe, 100);
+    }
   });
 
   // Subscribe to language changes
