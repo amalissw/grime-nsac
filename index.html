@@ -298,12 +298,21 @@
         </div>
       </section>
 
-      <!-- ===== INTRO PAGE (hidden, shown on first visit) ===== -->
+      <!-- ===== INTRO PAGE (Stage 9: Earth explode-reassemble animation) ===== -->
       <section id="intro-page" class="app-page" hidden>
-        <div class="intro-layout">
-          <h1 class="intro-title" data-i18n="intro.title">Welcome to Earth Jukebox</h1>
-          <p class="intro-body" data-i18n="intro.body"></p>
-          <button id="intro-next-btn" class="btn btn-primary" data-i18n="intro.next">Go to Globe →</button>
+        <canvas id="intro-canvas" class="intro-canvas" aria-hidden="true"></canvas>
+        <div class="intro-overlay">
+          <div class="intro-glass glass-panel">
+            <h1 class="intro-title" data-i18n="intro.title">Welcome to Earth Jukebox</h1>
+            <p class="intro-body" data-i18n="intro.body">Explore climate data through sound and touch. Tap the globe to hear real NASA data.</p>
+            <ul class="intro-features" aria-label="Features">
+              <li>🌐 3D Earth with real NASA temperature &amp; CO₂ data</li>
+              <li>🎵 4-part spatial sound reacts to climate data</li>
+              <li>🎙️ AI voice guide — ask questions in 3 languages</li>
+              <li>🌍 Continent songs composed from climate patterns</li>
+            </ul>
+            <button id="intro-next-btn" class="btn btn-primary intro-next-btn" data-i18n="intro.next">Go to Globe →</button>
+          </div>
         </div>
       </section>
 
@@ -313,6 +322,22 @@
     <button id="resume-btn" class="resume-btn btn-glass" hidden aria-label="Tap to resume sound">
       🔇 <span id="resume-btn-text">Tap to resume sound</span>
     </button>
+
+    <!-- Mobile bottom navigation (shown at ≤699px) -->
+    <nav id="bottom-nav" role="tablist" aria-label="Pages">
+      <button class="bottom-nav-btn" data-page="globe" aria-label="Globe">
+        <span class="bottom-nav-icon">🌐</span>
+        <span class="bottom-nav-label" data-i18n="tab.globe">Globe</span>
+      </button>
+      <button class="bottom-nav-btn" data-page="continents" aria-label="Continents">
+        <span class="bottom-nav-icon">🗺</span>
+        <span class="bottom-nav-label" data-i18n="tab.continents">Continents</span>
+      </button>
+      <button class="bottom-nav-btn" data-page="how" aria-label="How it sounds">
+        <span class="bottom-nav-icon">🎵</span>
+        <span class="bottom-nav-label" data-i18n="tab.how">Sound</span>
+      </button>
+    </nav>
 
   </div><!-- /#app-shell -->
 

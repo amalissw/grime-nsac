@@ -18,6 +18,8 @@ import { loadAllData } from './data/loader.js';
 import { setData } from './data/query.js';
 import { initGlobe } from './pages/globe.js';
 import { initMicButton } from './ui/mic-button.js';
+import { playContinentSong, stopContinentSong, isContinentSongPlaying } from './audio/continent-song.js';
+import { initHeroAnimation } from './hero-animation.js';
 
 // ── i18n strings ────────────────────────────────────────────────────────────
 const I18N = {
@@ -239,14 +241,16 @@ function setupStartScreen() {
     document.getElementById('app-shell').hidden = false;
 
     // Speak welcome after a brief delay
-    setTimeout(() => {
-      say(t('welcome.msg'));
-    }, 800);
+    setTimeout(() => { say(t('welcome.msg')); }, 800);
 
-    // Navigate
-    const target = state.settings.seenIntro ? 'globe' : 'intro';
-    setState({ settings: { ...state.settings, seenIntro: true } });
-    navigate(target);
+    // Navigate: show intro animation on first visit, skip if seen
+    if (!state.settings.seenIntro) {
+      setState({ settings: { ...state.settings, seenIntro: true } });
+      navigate('intro');
+      startIntroAnimation();
+    } else {
+      navigate('globe');
+    }
   });
 }
 
@@ -446,8 +450,48 @@ function setupContinentPage() {
   });
 
   playBtn?.addEventListener('click', () => {
-    // Continent song playback wired in Stage 8
-    showToast('Continent songs coming in Stage 8!');
+    const continent = state.continentsPage?.continent;
+    if (!continent) return;
+
+    if (isContinentSongPlaying()) {
+      stopContinentSong();
+      playBtn.textContent = t('continents.play');
+      const statusEl = document.getElementById('continent-status');
+      if (statusEl) statusEl.textContent = '';
+      return;
+    }
+
+    const yr   = state.continentsPage?.year || state.year;
+    // Derive danger from world data (simple: later years = higher danger)
+    const danger = Math.min(5, Math.max(1, Math.round(1 + (yr - 2000) / 6)));
+    const info = playContinentSong(continent, yr, danger, {
+      onStep: (step) => {
+        if (step === 0) {
+          const statusEl = document.getElementById('continent-status');
+          if (statusEl) statusEl.textContent = `${t(`continent.${continent}`)} · ${yr} · ${info?.key || ''} ${info?.scaleName || ''} · BPM ${info?.bpm || ''}`;
+        }
+      },
+    });
+    playBtn.textContent = '■ ' + (state.settings.language === 'ru' ? 'Стоп' : state.settings.language === 'kk' ? 'Тоқтату' : 'Stop');
+  });
+}
+
+// ── Intro animation (Stage 9) ─────────────────────────────────────────────────
+function startIntroAnimation() {
+  const canvas = document.getElementById('intro-canvas');
+  if (!canvas) return;
+  initHeroAnimation(canvas).catch(() => {});
+}
+
+// ── Bottom nav (mobile) ───────────────────────────────────────────────────────
+function setupBottomNav() {
+  document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => navigate(btn.dataset.page));
+  });
+  subscribe('page', page => {
+    document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.page === page);
+    });
   });
 }
 
@@ -475,6 +519,7 @@ async function boot() {
   setupResumeButton();
   setupDemoBanner();
   setupContinentPage();
+  setupBottomNav();
 
   // Subscribe to page changes from router
   let _globeInited = false;
@@ -511,10 +556,15 @@ async function boot() {
   // Init mic button
   initMicButton();
 
+  // Start hero animation on start screen
+  setTimeout(() => {
+    const heroCanvas = document.getElementById('hero-canvas');
+    if (heroCanvas) initHeroAnimation(heroCanvas).catch(() => {});
+  }, 100);
+
   // Load data in background
   loadAllData().then(data => {
     setData(data);
-    // Notify globe page (Stage 2 will listen)
     window.dispatchEvent(new CustomEvent('ej:data-ready', { detail: data }));
   }).catch(err => {
     console.warn('[ej] data load error:', err);

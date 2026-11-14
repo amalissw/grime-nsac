@@ -1,6 +1,6 @@
 /**
- * Mic button — SpeechRecognition + MediaRecorder fallback.
- * Spec §17 Stage 6 (partial: local commands only until Gemini wired).
+ * Mic button — SpeechRecognition + Gemini AI fallback.
+ * Local commands run instantly; unrecognized speech goes to Gemini.
  */
 import { state, setState } from '../state.js';
 import { config } from '../config.js';
@@ -9,10 +9,13 @@ import { playEarcon } from '../audio/instruments.js';
 import { say } from '../audio/speech.js';
 import { showToast } from './shell.js';
 import { navigate } from '../router.js';
+import { askGemini, isGeminiConfigured } from '../audio/gemini.js';
+import { duckMusic } from '../audio/engine.js';
 
 let _recognizing = false;
 let _recognition = null;
 
+// ── Local commands ────────────────────────────────────────────────────────────
 const LOCAL_COMMANDS = {
   en: {
     'globe': () => navigate('globe'),
@@ -29,7 +32,7 @@ const LOCAL_COMMANDS = {
     'volcanoes': () => setState({ layer: 'volcanoes', segment: 'disasters' }),
     'next year': () => setState({ year: Math.min(config.yearMax, state.year + 1) }),
     'previous year': () => setState({ year: Math.max(config.yearMin, state.year - 1) }),
-    'mute': () => { document.getElementById('btn-mute')?.click(); },
+    'mute': () => { document.getElementById('mute-btn')?.click(); },
     'help': () => say('Say: globe, continents, temperature, CO2, fires, storms, earthquakes, next year, previous year.'),
   },
   ru: {
@@ -54,35 +57,73 @@ function runLocalCommand(transcript) {
   const lang = state.settings.language || 'en';
   const cmds = { ...LOCAL_COMMANDS.en, ...(LOCAL_COMMANDS[lang] || {}) };
   const t = transcript.toLowerCase().trim();
-
   for (const [phrase, action] of Object.entries(cmds)) {
-    if (t.includes(phrase)) {
-      action();
-      return true;
-    }
+    if (t.includes(phrase)) { action(); return true; }
   }
   return false;
 }
 
+// ── Gemini fallback ───────────────────────────────────────────────────────────
+async function handleWithGemini(transcript) {
+  setMicState('thinking');
+  duckMusic(true);
+  playEarcon('thinking');
+
+  const ctx = {
+    layer: state.layer,
+    year: state.year,
+    lat: state.selection?.lat ?? null,
+    lon: state.selection?.lon ?? null,
+    pointData: state.selection ?? null,
+    language: state.settings.language || 'en',
+  };
+
+  const reply = await askGemini(transcript, ctx);
+  duckMusic(false);
+
+  if (reply) {
+    say(reply);
+    showToast(reply.slice(0, 100) + (reply.length > 100 ? '…' : ''));
+  } else {
+    const fallback = {
+      en: `I heard: "${transcript}". Try asking about the temperature, CO₂ levels, or what's happening in a region.`,
+      ru: `Я слышу: "${transcript}". Попробуйте спросить о температуре или CO₂.`,
+      kk: `Мен естідім: "${transcript}". Температура немесе CO₂ туралы сұраңыз.`,
+    };
+    say(fallback[state.settings.language || 'en'] || fallback.en);
+  }
+
+  setMicState(false);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 export function initMicButton() {
   const btn = document.getElementById('mic-btn');
   if (!btn) return;
 
   if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-    btn.title = 'Speech recognition not supported';
+    btn.title = 'Speech recognition not supported in this browser';
     btn.style.opacity = '0.4';
+    btn.setAttribute('aria-disabled', 'true');
     return;
+  }
+
+  // Show Gemini badge if key is present
+  if (isGeminiConfigured()) {
+    btn.setAttribute('title', 'Ask Earth Jukebox (AI-powered)');
+    const badge = document.createElement('span');
+    badge.className = 'mic-ai-badge';
+    badge.textContent = 'AI';
+    badge.setAttribute('aria-hidden', 'true');
+    btn.appendChild(badge);
   }
 
   btn.addEventListener('click', toggleMic);
 }
 
 function toggleMic() {
-  if (_recognizing) {
-    stopMic();
-  } else {
-    startMic();
-  }
+  if (_recognizing) stopMic();
+  else startMic();
 }
 
 function startMic() {
@@ -95,26 +136,27 @@ function startMic() {
 
   _recognition.onstart = () => {
     _recognizing = true;
-    setMicState(true);
+    setMicState('listening');
     vibrate('micStart');
     playEarcon('micStart');
     setTimeout(stopMic, config.micMaxMs);
   };
 
-  _recognition.onresult = e => {
+  _recognition.onresult = async e => {
     const transcript = e.results[0]?.[0]?.transcript || '';
     if (!transcript) return;
 
     const handled = runLocalCommand(transcript);
     if (!handled) {
-      // Forward to Gemini (Stage 6 — show toast for now)
-      showToast(`"${transcript}" — Gemini assistant coming in Stage 6`);
+      await handleWithGemini(transcript);
     }
   };
 
   _recognition.onerror = e => {
-    console.warn('[ej] speech error', e.error);
-    playEarcon('error');
+    if (e.error !== 'no-speech') {
+      playEarcon('error');
+      showToast('Mic error: ' + e.error);
+    }
     stopMic();
   };
 
@@ -134,11 +176,16 @@ function stopMic() {
   vibrate('micStop');
 }
 
-function setMicState(active) {
+function setMicState(state) {
   const btn = document.getElementById('mic-btn');
   if (!btn) return;
-  btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-  btn.classList.toggle('recording', active);
+  btn.setAttribute('aria-pressed', state === 'listening' ? 'true' : 'false');
+  btn.classList.toggle('recording', state === 'listening');
+  btn.classList.toggle('thinking', state === 'thinking');
   const icon = btn.querySelector('.mic-icon');
-  if (icon) icon.textContent = active ? '🔴' : '🎙️';
+  if (icon) {
+    if (state === 'listening') icon.textContent = '🔴';
+    else if (state === 'thinking') icon.textContent = '💭';
+    else icon.textContent = '🎙️';
+  }
 }

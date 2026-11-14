@@ -134,6 +134,30 @@ export function initGlobe() {
     updateEventList();
   });
 
+  // Pinch-to-zoom on mobile
+  let _pinchDist = null;
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      _pinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  }, { passive: true });
+  wrap.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && _pinchDist !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const scale = dist / _pinchDist;
+      const z = _camera.position.z / scale;
+      _camera.position.z = Math.max(_controls.minDistance, Math.min(_controls.maxDistance, z));
+      _pinchDist = dist;
+    }
+  }, { passive: true });
+  wrap.addEventListener('touchend', () => { _pinchDist = null; }, { passive: true });
+
   // Resize
   const ro = new ResizeObserver(() => {
     if (!wrap) return;
