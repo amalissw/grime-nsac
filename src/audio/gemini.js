@@ -5,7 +5,7 @@
  */
 import { state } from '../state.js';
 
-const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent';
 
 function getKey() {
   return import.meta.env.VITE_GEMINI_KEY || '';
