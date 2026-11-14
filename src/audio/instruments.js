@@ -1,178 +1,178 @@
 /**
- * All synthesized instruments — created once, reused
+ * All synthesized instruments — created once at boot and reused.
+ * Spec §9.2
  */
 import * as Tone from 'tone';
-import { getMasterChain } from './engine.js';
+import { getMasterChain, getReverb } from './engine.js';
 
-let instruments = null;
-let reverb = null;
+let inst = null;
 
 export function initInstruments() {
-  if (instruments) return instruments;
-
+  if (inst) return inst;
   const chain = getMasterChain();
+  const reverb = getReverb();
 
-  // Shared reverb
-  reverb = new Tone.Reverb({ decay: 3, preDelay: 0.03, wet: 0.25 });
-  reverb.connect(chain);
-
-  // Dry chain (no reverb for percussive sounds)
-  const dry = chain;
-
-  // Ocean: FM pad with LFO
-  const oceanFilter = new Tone.Filter(600, 'lowpass').connect(reverb);
-  const oceanLfo = new Tone.LFO({ frequency: 0.1, min: 400, max: 800 }).connect(oceanFilter.frequency);
-  oceanLfo.start();
-  const ocean = new Tone.FMSynth({
+  // pad — base chord, danger harmony
+  const pad = new Tone.PolySynth(Tone.FMSynth, {
     harmonicity: 1.5,
-    modulationIndex: 3,
-    envelope: { attack: 0.4, decay: 0.2, sustain: 0.8, release: 2.0 },
-    modulationEnvelope: { attack: 0.5, decay: 0.5, sustain: 0.5, release: 2.0 },
-  }).connect(oceanFilter);
-  ocean.volume.value = -20;
+    modulationIndex: 2,
+    envelope: { attack: 1.2, release: 3 },
+  });
+  const padFilter = new Tone.Filter(700, 'lowpass');
+  pad.connect(padFilter);
+  padFilter.connect(reverb);
+  pad.volume.value = -24;
 
-  // Ocean noise (wave texture)
-  const waveNoise = new Tone.Noise('pink').connect(
-    new Tone.Filter(300, 'lowpass').connect(
-      new Tone.Volume(-35).connect(reverb)
-    )
-  );
+  // pulse — danger tempo (heartbeat drum)
+  const pulse = new Tone.MembraneSynth({ pitchDecay: 0.02, octaves: 2, envelope: { decay: 0.25 } });
+  pulse.connect(chain);
+  pulse.volume.value = -16;
 
-  // Land: PluckSynth (marimba-like)
-  const land = new Tone.PluckSynth({
-    attackNoise: 1,
-    dampening: 3800,
-    resonance: 0.9,
-  }).connect(reverb);
-  land.volume.value = -18;
+  // marimba — temperature texture
+  const marimba = new Tone.PluckSynth({ attackNoise: 1.5, dampening: 4000, resonance: 0.95 });
+  marimba.connect(reverb);
+  marimba.volume.value = -18;
 
-  // Fire crackle: NoiseSynth with bandpass
-  const fireFilter = new Tone.Filter({ frequency: 2000, type: 'bandpass', Q: 1.5 });
-  fireFilter.connect(dry);
-  const fire = new Tone.NoiseSynth({
+  // crackle — fires
+  const crackleFilter = new Tone.Filter({ frequency: 2500, type: 'bandpass', Q: 1.2 });
+  crackleFilter.connect(chain);
+  const crackle = new Tone.NoiseSynth({
     noise: { type: 'white' },
-    envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.02 },
-  }).connect(fireFilter);
-  fire.volume.value = -28;
+    envelope: { attack: 0.001, decay: 0.03, sustain: 0 },
+  });
+  crackle.connect(crackleFilter);
+  crackle.volume.value = -24;
 
-  // Anomaly dissonance: subtle tritone synth
-  const anomaly = new Tone.Synth({
-    oscillator: { type: 'triangle' },
-    envelope: { attack: 0.3, decay: 0.5, sustain: 0.4, release: 1.5 },
-  }).connect(new Tone.Volume(-28).connect(reverb));
+  // wind — storms
+  const windPanner = new Tone.AutoPanner({ frequency: 0.3, depth: 1 });
+  windPanner.connect(reverb);
+  windPanner.start();
+  const windFilter = new Tone.AutoFilter({ frequency: 0.2, baseFrequency: 400, octaves: 2.5 });
+  windFilter.connect(windPanner);
+  windFilter.start();
+  const wind = new Tone.Noise('pink');
+  wind.connect(windFilter);
+  wind.volume.value = -28;
 
-  // Coast click: MembraneSynth
-  const coast = new Tone.MembraneSynth({
-    pitchDecay: 0.025,
-    octaves: 2,
-    envelope: { attack: 0.001, decay: 0.025, sustain: 0, release: 0.01 },
-  }).connect(dry);
-  coast.volume.value = -18;
+  // thump — earthquakes
+  const thump = new Tone.MembraneSynth({ pitchDecay: 0.1, octaves: 6, envelope: { decay: 0.8 } });
+  thump.connect(reverb);
+  thump.volume.value = -18;
 
-  // Beacon: sine bell
-  const beaconPanner = new Tone.Panner(0).connect(reverb);
-  const beacon = new Tone.Synth({
-    oscillator: { type: 'sine', partials: [1, 0.5, 0.25] },
-    envelope: { attack: 0.01, decay: 0.4, sustain: 0.1, release: 0.6 },
-  }).connect(beaconPanner);
-  beacon.volume.value = -16;
+  // rumble — volcanoes
+  const rumbleEnv = new Tone.AmplitudeEnvelope({ attack: 0.3, decay: 3, sustain: 0, release: 1 });
+  rumbleEnv.connect(chain);
+  const rumbleFilter = new Tone.Filter(200, 'lowpass');
+  rumbleFilter.connect(rumbleEnv);
+  const rumble = new Tone.Noise('brown');
+  rumble.connect(rumbleFilter);
+  rumble.volume.value = -20;
 
-  // Year tick: MetalSynth
-  const yearTick = new Tone.MetalSynth({
-    frequency: 400,
-    envelope: { attack: 0.001, decay: 0.04, release: 0.01 },
-    harmonicity: 5.1,
-    modulationIndex: 32,
-    resonance: 4000,
-    octaves: 1.5,
-  }).connect(dry);
-  yearTick.volume.value = -38;
+  // air — CO₂ "thick air"
+  const airFilter = new Tone.Filter(6000, 'lowpass');
+  airFilter.connect(chain);
+  const air = new Tone.Noise('pink');
+  air.connect(airFilter);
+  air.volume.value = -30;
+  air.start();
 
-  // Mood chord pad
-  const chord = new Tone.PolySynth(Tone.Synth, {
-    oscillator: { type: 'triangle' },
-    envelope: { attack: 0.8, decay: 0.5, sustain: 0.7, release: 2.0 },
-  }).connect(reverb);
-  chord.volume.value = -26;
-  chord.maxPolyphony = 4;
+  // birds — continents
+  const birds = new Tone.PolySynth(Tone.FMSynth, {
+    harmonicity: 3.01,
+    modulationIndex: 10,
+    envelope: { attack: 0.005, decay: 0.08, sustain: 0 },
+  });
+  birds.connect(reverb);
+  birds.volume.value = -14;
 
-  // UI blip
-  const ui = new Tone.Synth({
-    oscillator: { type: 'sine' },
-    envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.01 },
-  }).connect(dry);
-  ui.volume.value = -40;
+  // hum — continents CO₂ drone
+  const humFilter = new Tone.Filter(300, 'lowpass');
+  humFilter.connect(chain);
+  const humOsc = new Tone.Oscillator(55, 'sine');
+  humOsc.connect(humFilter);
+  const humNoise = new Tone.Noise('pink');
+  humNoise.connect(humFilter);
+  const hum = new Tone.Volume(-40);
+  humOsc.connect(hum);
+  humNoise.connect(hum);
+  hum.connect(chain);
 
-  // Welcome chord
+  // welcome chord
   const welcome = new Tone.PolySynth(Tone.Synth, {
     oscillator: { type: 'triangle' },
     envelope: { attack: 0.1, decay: 0.5, sustain: 0.4, release: 1.5 },
-  }).connect(reverb);
+  });
+  welcome.connect(reverb);
   welcome.volume.value = -20;
 
-  instruments = { ocean, waveNoise, land, fire, anomaly, coast, beacon, beaconPanner, yearTick, chord, ui, welcome };
-  return instruments;
+  // earcon blip
+  const earcon = new Tone.Synth({
+    oscillator: { type: 'sine' },
+    envelope: { attack: 0.001, decay: 0.08, sustain: 0, release: 0.05 },
+  });
+  earcon.connect(chain);
+  earcon.volume.value = -32;
+
+  // spatial panner (for position compass)
+  const panner = new Tone.Panner(0);
+  panner.connect(reverb);
+
+  inst = {
+    pad, padFilter,
+    pulse,
+    marimba,
+    crackle, crackleFilter,
+    wind, windFilter, windPanner,
+    thump,
+    rumble, rumbleFilter, rumbleEnv,
+    air, airFilter,
+    birds,
+    hum, humOsc, humNoise,
+    welcome,
+    earcon,
+    panner,
+  };
+  return inst;
 }
 
-export function getInstruments() { return instruments; }
+export function getInstruments() { return inst; }
 
-export function startWave() {
-  if (!instruments) return;
-  instruments.waveNoise.start();
-}
-
-export function stopWave() {
-  if (!instruments) return;
-  try { instruments.waveNoise.stop(); } catch {}
-}
-
-export function playWelcome() {
-  if (!instruments) return;
-  const { welcome } = instruments;
+export function playWelcomeChord() {
+  const i = inst; if (!i) return;
   const now = Tone.now();
-  welcome.triggerAttackRelease(['C3', 'E3', 'G3'], 2, now);
+  i.welcome.triggerAttackRelease(['C3', 'E3', 'G3', 'B3'], 2, now);
 }
 
-export function playCoast() {
-  if (!instruments) return;
-  instruments.coast.triggerAttackRelease('C2', '32n');
-}
-
-export function playYearTick() {
-  if (!instruments) return;
-  instruments.yearTick.triggerAttackRelease('16n');
-}
-
-export function playUiClick() {
-  if (!instruments) return;
-  instruments.ui.triggerAttackRelease('E5', '32n');
-}
-
-let lastBeaconTime = 0;
-export function playBeaconPulse(panValue, freq = 880) {
-  if (!instruments) return;
+let _earconBusy = false;
+export function playEarcon(type) {
+  const i = inst; if (!i || _earconBusy) return;
+  _earconBusy = true;
   const now = Tone.now();
-  if (now - lastBeaconTime < 0.15) return; // debounce
-  lastBeaconTime = now;
-  instruments.beaconPanner.pan.rampTo(panValue, 0.05);
-  instruments.beacon.triggerAttackRelease(freq, '8n', now + 0.01);
-}
-
-export function playAnomaly(noteFreq) {
-  if (!instruments) return;
-  instruments.anomaly.triggerAttackRelease(noteFreq, '4n');
-}
-
-export function playFanfare() {
-  if (!instruments) return;
-  const { welcome } = instruments;
-  const now = Tone.now();
-  welcome.triggerAttackRelease('C4', '8n', now);
-  welcome.triggerAttackRelease('E4', '8n', now + 0.15);
-  welcome.triggerAttackRelease('G4', '4n', now + 0.3);
-}
-
-export function playEdgeBump() {
-  if (!instruments) return;
-  instruments.coast.triggerAttackRelease('A1', '16n');
+  switch (type) {
+    case 'select':    i.earcon.triggerAttackRelease('E6', '32n', now); break;
+    case 'layerChange': {
+      i.earcon.triggerAttackRelease('C5', '16n', now);
+      i.earcon.triggerAttackRelease('E5', '16n', now + 0.12);
+      break;
+    }
+    case 'yearTick':  i.earcon.triggerAttackRelease('C6', '64n', now); break;
+    case 'micStart': {
+      i.earcon.triggerAttackRelease('C5', '16n', now);
+      i.earcon.triggerAttackRelease('E5', '16n', now + 0.1);
+      break;
+    }
+    case 'micStop': {
+      i.earcon.triggerAttackRelease('E5', '16n', now);
+      i.earcon.triggerAttackRelease('C5', '16n', now + 0.1);
+      break;
+    }
+    case 'error': {
+      i.earcon.triggerAttackRelease('C3', '8n', now);
+      i.earcon.triggerAttackRelease('C3', '8n', now + 0.15);
+      break;
+    }
+    case 'pageChange': i.earcon.triggerAttackRelease('G5', '16n', now); break;
+    case 'thinking':  i.earcon.triggerAttackRelease('A4', '64n', now); break;
+  }
+  setTimeout(() => { _earconBusy = false; }, 300);
 }

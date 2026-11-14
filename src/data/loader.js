@@ -1,81 +1,94 @@
 /**
- * Data loader: reads manifest.json, falls back to placeholders gracefully
+ * Data loader: fetches JSON from public/data/, validates, falls back to placeholders.
+ * Spec §12
  */
-import { PLACEHOLDER_THEMES, PLACEHOLDER_REGIONS } from './placeholder.js';
+import { placeholders } from './placeholders.js';
+import { setState } from '../state.js';
 
-let manifest = null;
-let themes = null;
-let regions = null;
+const BASE = import.meta.env.BASE_URL || './';
+const DATA = BASE + 'data/';
 
-export async function loadData() {
+let _cache = {};
+
+async function fetchJson(name) {
+  if (_cache[name]) return _cache[name];
   try {
-    const res = await fetch('./data/manifest.json');
-    if (res.ok) {
-      manifest = await res.json();
-    }
+    const r = await fetch(DATA + name + '.json');
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    _cache[name] = data;
+    return data;
   } catch {
-    manifest = null;
+    return null;
   }
+}
 
-  if (manifest && manifest.themes) {
-    // Merge real themes with placeholders for missing ones
-    const realIds = new Set(manifest.themes.map(t => t.id));
-    themes = [...manifest.themes];
-    // Add placeholder themes not covered by manifest
-    for (const pt of PLACEHOLDER_THEMES) {
-      if (!realIds.has(pt.id)) themes.push(pt);
-    }
+export async function loadAllData() {
+  const demo = [];
+
+  const [temperature, co2, events, storms, quakes, seaice, countries, world] = await Promise.all([
+    fetchJson('temperature'),
+    fetchJson('co2'),
+    fetchJson('events'),
+    fetchJson('storms'),
+    fetchJson('quakes'),
+    fetchJson('seaice'),
+    fetchJson('countries'),
+    fetchJson('world'),
+  ]);
+
+  const data = {};
+
+  if (temperature && temperature.cells) {
+    data.temperature = temperature;
   } else {
-    themes = PLACEHOLDER_THEMES;
+    data.temperature = placeholders.temperature();
+    demo.push('temperature');
   }
 
-  // Load regions
-  try {
-    if (manifest && manifest.regions) {
-      const res = await fetch(`./data/${manifest.regions}`);
-      if (res.ok) regions = await res.json();
-    }
-  } catch {}
-  if (!regions) regions = PLACEHOLDER_REGIONS;
-
-  return { themes, regions };
-}
-
-export function getThemes() { return themes || PLACEHOLDER_THEMES; }
-export function getRegions() { return regions || PLACEHOLDER_REGIONS; }
-
-/** Render a frame to a canvas and return the canvas */
-export async function getFrameCanvas(theme, frameIndex, w = 512, h = 256) {
-  const frame = theme.frames[frameIndex];
-  if (!frame) return null;
-
-  // If frame has a renderFn (placeholder), use it
-  if (frame.renderFn) {
-    const canvas = document.createElement('canvas');
-    frame.renderFn(canvas, w, h);
-    return canvas;
+  if (co2 && co2.years && co2.ppm) {
+    data.co2 = co2;
+  } else {
+    data.co2 = placeholders.co2();
+    demo.push('co2');
   }
 
-  // Load from image file
-  if (frame.image) {
-    return loadImageToCanvas(frame.image, w, h);
+  if (events && Array.isArray(events)) {
+    data.events = events;
+  } else {
+    data.events = placeholders.events();
+    demo.push('events');
   }
 
-  return null;
-}
+  if (storms && Array.isArray(storms)) {
+    data.storms = storms;
+  } else {
+    data.storms = placeholders.storms();
+    demo.push('storms');
+  }
 
-async function loadImageToCanvas(src, w, h) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas);
-    };
-    img.onerror = () => resolve(null);
-    img.src = `./data/${src}`;
-  });
+  if (quakes && Array.isArray(quakes)) {
+    data.quakes = quakes;
+  } else {
+    data.quakes = placeholders.quakes();
+    demo.push('quakes');
+  }
+
+  if (seaice && seaice.years) {
+    data.seaice = seaice;
+  } else {
+    data.seaice = placeholders.seaice();
+  }
+
+  if (countries && Array.isArray(countries)) {
+    data.countries = countries;
+  } else {
+    data.countries = placeholders.countries();
+  }
+
+  data.world = world || placeholders.world(data);
+
+  if (demo.length > 0) setState({ demoData: demo });
+
+  return data;
 }

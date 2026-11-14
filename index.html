@@ -1,216 +1,320 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#f3f6f7" />
   <title>Earth Jukebox — Touch & Hear</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="/src/ui/styles.css" />
+  <link rel="preload" href="/src/ui/glass.css" as="style" />
+  <link rel="stylesheet" href="/src/ui/glass.css" />
+  <style>
+    /* Minimal critical CSS so the start screen shows before modules load */
+    body { margin: 0; background: radial-gradient(ellipse at 60% 40%, #F3F6F7 0%, #DCE4E2 100%); }
+    #start-screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; }
+  </style>
 </head>
 <body>
-  <a href="#map" class="skip-link">Skip to map</a>
+  <!-- Skip link -->
+  <a href="#globe-page" class="skip-link">Skip to globe</a>
 
-  <!-- Start screen overlay -->
-  <div id="start-screen" class="start-screen" role="dialog" aria-modal="true" aria-label="Welcome to Earth Jukebox">
-    <!-- Three.js hero animation canvas -->
-    <canvas id="hero-canvas"></canvas>
+  <!-- ARIA live regions -->
+  <div id="aria-polite" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+  <div id="aria-assertive" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
 
-    <div class="start-content">
+  <!-- Toast area -->
+  <div id="toast-area" class="toast-area" aria-live="polite"></div>
+
+  <!-- Demo data banner -->
+  <div id="demo-banner" class="demo-banner" role="status" aria-live="polite" hidden>
+    <span>⚠</span> <span id="demo-banner-text">Demo data — not NASA measurements</span>
+  </div>
+
+  <!-- ======== START SCREEN ======== -->
+  <div id="start-screen" role="dialog" aria-modal="true" aria-labelledby="start-title">
+    <!-- Animated background globe canvas -->
+    <canvas id="hero-canvas" aria-hidden="true"></canvas>
+
+    <div class="start-card glass-panel">
+      <!-- Logo -->
       <div class="start-logo">
-        <span class="start-logo-nasa">NASA · Space Apps Challenge 2026</span>
-        <span class="start-logo-title">Earth Jukebox</span>
-        <span class="start-logo-sub">Touch &amp; Hear the Planet</span>
+        <div class="start-logo-badge">NASA · Space Apps Challenge 2026</div>
+        <div class="start-logo-title" id="start-title">🌍 Earth Jukebox</div>
+        <div class="start-logo-sub" id="start-sub">Touch &amp; Hear the Planet</div>
       </div>
 
       <!-- Step 1: Language picker -->
-      <div id="lang-picker" class="lang-picker" role="group" aria-label="Choose language">
-        <p class="lang-label" id="lang-label-text">Choose language · Выберите язык · 选择语言</p>
+      <div id="lang-picker" role="group" aria-labelledby="lang-label">
+        <p class="lang-label" id="lang-label">Choose language · Выберите язык · Тілді таңдаңыз</p>
         <div class="lang-buttons">
-          <button class="lang-btn" data-lang="ru" aria-label="Russian — Русский">
+          <button class="lang-btn chip" data-lang="kk" aria-label="Қазақша — Kazakh">
             <span class="lang-num">1</span>
-            <span class="lang-name">Русский</span>
+            <span class="lang-name">Қазақша</span>
           </button>
-          <button class="lang-btn" data-lang="en" aria-label="English">
+          <button class="lang-btn chip" data-lang="en" aria-label="English">
             <span class="lang-num">2</span>
             <span class="lang-name">English</span>
           </button>
-          <button class="lang-btn" data-lang="zh" aria-label="Chinese — 中文">
+          <button class="lang-btn chip" data-lang="ru" aria-label="Русский — Russian">
             <span class="lang-num">3</span>
-            <span class="lang-name">中文</span>
+            <span class="lang-name">Русский</span>
           </button>
         </div>
       </div>
 
-      <!-- Step 2: Start button (shown after language selected) -->
-      <div id="start-step" class="start-step" hidden>
-        <p class="lang-chosen-msg" id="lang-chosen-msg"></p>
-        <button id="start-btn" class="start-btn" aria-label="Start — sound on">
+      <!-- Step 2: Start button -->
+      <div id="start-step" hidden>
+        <p class="start-chosen-msg" id="start-chosen-msg"></p>
+        <button id="start-btn" class="btn btn-primary start-btn-big" aria-label="Start">
           <span class="start-btn-icon" aria-hidden="true">▶</span>
           <span id="start-btn-text">Start — sound on</span>
         </button>
-        <p class="start-hint" id="start-hint-text">Best with headphones · Turn up media volume</p>
-        <p class="start-hint-iphone" id="start-hint-iphone">iPhone: Switch off silent mode</p>
-        <label class="start-sr-label">
+        <p class="start-hint" id="start-hint"></p>
+        <p class="start-hint-iphone" id="start-hint-iphone" hidden>🍎 iPhone: Switch off silent mode</p>
+        <label class="start-sr-row">
           <input type="checkbox" id="sr-checkbox" />
-          <span id="sr-label-text">I use a screen reader</span>
+          <span id="sr-label-text">I use a screen reader (TalkBack / VoiceOver)</span>
         </label>
       </div>
     </div>
   </div>
 
-  <!-- Demo data banner -->
-  <div id="demo-banner" class="demo-banner" role="status" aria-live="polite" hidden>
-    ⚠ Demo data — not NASA measurements
-  </div>
+  <!-- ======== APP SHELL ======== -->
+  <div id="app-shell" hidden>
+    <!-- Top bar -->
+    <header id="top-bar" role="banner">
+      <button id="logo-btn" class="logo-btn btn-glass" aria-label="Earth Jukebox home">
+        🌍 <span id="logo-text">Earth Jukebox</span>
+      </button>
 
-  <!-- Resume sound button (shown after returning from background) -->
-  <button id="resume-btn" class="resume-btn" hidden aria-label="Tap to resume sound">
-    🔇 Tap to resume sound
-  </button>
-
-  <!-- Main app -->
-  <div id="app" class="app" hidden>
-    <!-- Header -->
-    <header class="app-header">
-      <div class="header-left">
-        <span class="header-logo" aria-label="Earth Jukebox">🌍 Earth Jukebox</span>
-      </div>
-      <nav class="tab-nav" role="tablist" aria-label="Modes">
-        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="jukebox" id="tab-jukebox">Jukebox</button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="explore" id="tab-explore">Explore</button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="guide" id="tab-guide">Guide</button>
-        <a href="/how-it-sounds.html" class="tab-link" target="_blank">How it sounds ↗</a>
+      <!-- Page tabs -->
+      <nav id="page-tabs" role="tablist" aria-label="Pages">
+        <button class="page-tab" role="tab" data-page="globe" id="tab-globe">
+          <span class="tab-icon" aria-hidden="true">🌐</span>
+          <span class="tab-label" data-i18n="tab.globe">Globe</span>
+        </button>
+        <button class="page-tab" role="tab" data-page="continents" id="tab-continents">
+          <span class="tab-icon" aria-hidden="true">🗺</span>
+          <span class="tab-label" data-i18n="tab.continents">Continents</span>
+        </button>
+        <button class="page-tab" role="tab" data-page="how" id="tab-how">
+          <span class="tab-icon" aria-hidden="true">🎵</span>
+          <span class="tab-label" data-i18n="tab.how">How it sounds</span>
+        </button>
       </nav>
-      <div class="header-controls">
-        <button id="mute-btn" class="ctrl-btn" aria-label="Mute" aria-pressed="false">🔊</button>
-        <input type="range" id="volume-slider" class="volume-slider" min="-40" max="0" step="1" value="-12" aria-label="Volume" />
+
+      <!-- Top-bar controls -->
+      <div id="top-controls">
+        <input type="range" id="volume-slider" min="-40" max="0" step="1" value="-12"
+          aria-label="Volume" class="volume-slider" />
+        <button id="mute-btn" class="btn-glass icon-btn" aria-label="Mute" aria-pressed="false">🔊</button>
+        <button id="theme-btn" class="btn-glass icon-btn" aria-label="Toggle theme">☀️</button>
+        <button id="settings-btn" class="btn-glass icon-btn" aria-label="Settings" aria-expanded="false">⚙️</button>
       </div>
     </header>
 
-    <!-- Tab panels -->
-    <main>
-      <!-- Jukebox -->
-      <section id="panel-jukebox" class="tab-panel active" role="tabpanel" aria-labelledby="tab-jukebox">
-        <div class="jukebox-layout">
-          <aside class="track-list" aria-label="Themes">
-            <div id="track-cards"></div>
+    <!-- Settings drawer -->
+    <aside id="settings-drawer" aria-label="Settings" hidden>
+      <div class="settings-drawer-inner glass-panel">
+        <h2 class="drawer-title" data-i18n="settings.title">Settings</h2>
+        <div class="settings-row">
+          <span class="settings-label" data-i18n="settings.language">Language</span>
+          <div class="chip-group" role="group" aria-label="Language">
+            <button class="chip lang-chip" data-lang="kk">ҚАЗ</button>
+            <button class="chip lang-chip active" data-lang="en">EN</button>
+            <button class="chip lang-chip" data-lang="ru">РУС</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="voice-select" data-i18n="settings.voice">Voice</label>
+          <select id="voice-select" class="settings-select">
+            <option value="Kore">Kore</option>
+            <option value="Puck">Puck</option>
+            <option value="Charon">Charon</option>
+            <option value="Aoede">Aoede</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label" data-i18n="settings.theme">Theme</span>
+          <div class="chip-group" role="group" aria-label="Theme">
+            <button class="chip theme-chip active" data-theme="light" data-i18n="settings.light">Light</button>
+            <button class="chip theme-chip" data-theme="dark" data-i18n="settings.dark">Dark</button>
+            <button class="chip theme-chip" data-theme="contrast" data-i18n="settings.contrast">Contrast</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="vibration-toggle" data-i18n="settings.vibration">Vibration</label>
+          <button id="vibration-toggle" class="chip" role="switch" aria-checked="true">On</button>
+          <input type="range" id="vibration-intensity" min="0.5" max="2" step="0.1" value="1"
+            class="intensity-slider" aria-label="Vibration intensity" />
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="sr-toggle" data-i18n="settings.screenReader">Screen reader</label>
+          <input type="checkbox" id="sr-toggle" role="switch" />
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="hc-toggle" data-i18n="settings.highContrast">High contrast</label>
+          <input type="checkbox" id="hc-toggle" role="switch" />
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="motion-toggle" data-i18n="settings.reduceMotion">Reduce motion</label>
+          <input type="checkbox" id="motion-toggle" role="switch" />
+        </div>
+        <button id="close-settings-btn" class="btn btn-glass" data-i18n="settings.close">Close</button>
+      </div>
+    </aside>
+
+    <!-- Page content -->
+    <main id="page-content">
+
+      <!-- ===== GLOBE PAGE ===== -->
+      <section id="globe-page" class="app-page" role="tabpanel" aria-labelledby="tab-globe" hidden>
+        <div id="globe-layout">
+
+          <!-- Globe canvas -->
+          <div id="globe-wrap">
+            <canvas id="globe-canvas"
+              role="application"
+              aria-label="Interactive 3D Earth"
+              tabindex="0"></canvas>
+            <div id="point-card" class="glass-panel" hidden aria-live="polite">
+              <div id="point-place" class="point-place"></div>
+              <div id="point-value" class="point-value"></div>
+              <div id="point-level" class="point-level"></div>
+              <button id="point-speak-btn" class="btn btn-glass" aria-label="Speak this location">🔊</button>
+            </div>
+          </div>
+
+          <!-- Right panel -->
+          <aside id="sound-panel" class="glass-panel" aria-label="Data panel">
+            <!-- Segment tabs: Climate / Disasters -->
+            <div class="segment-tabs" role="tablist" aria-label="Data segments">
+              <button class="segment-tab active" role="tab" data-segment="climate" id="seg-climate">
+                <span data-i18n="seg.climate">Climate change</span>
+              </button>
+              <button class="segment-tab" role="tab" data-segment="disasters" id="seg-disasters">
+                <span data-i18n="seg.disasters">Disasters</span>
+              </button>
+            </div>
+
+            <!-- Climate layers -->
+            <div id="climate-options" class="option-group" role="group" aria-label="Climate layers">
+              <button class="option-card active" data-layer="temperature" aria-pressed="true">
+                <span class="option-icon" aria-hidden="true">🌡️</span>
+                <span class="option-label" data-i18n="layer.temperature">Temperature</span>
+              </button>
+              <button class="option-card" data-layer="co2" aria-pressed="false">
+                <span class="option-icon" aria-hidden="true">💨</span>
+                <span class="option-label" data-i18n="layer.co2">CO₂</span>
+              </button>
+            </div>
+
+            <!-- Disaster layers -->
+            <div id="disaster-options" class="option-group" role="group" aria-label="Disaster layers" hidden>
+              <button class="option-card" data-layer="wildfires" aria-pressed="false">
+                <span class="option-icon" aria-hidden="true">🔥</span>
+                <span class="option-label" data-i18n="layer.wildfires">Wildfires</span>
+              </button>
+              <button class="option-card" data-layer="storms" aria-pressed="false">
+                <span class="option-icon" aria-hidden="true">🌀</span>
+                <span class="option-label" data-i18n="layer.storms">Storms</span>
+              </button>
+              <button class="option-card" data-layer="earthquakes" aria-pressed="false">
+                <span class="option-icon" aria-hidden="true">📡</span>
+                <span class="option-label" data-i18n="layer.earthquakes">Earthquakes</span>
+              </button>
+              <button class="option-card" data-layer="volcanoes" aria-pressed="false">
+                <span class="option-icon" aria-hidden="true">🌋</span>
+                <span class="option-label" data-i18n="layer.volcanoes">Volcanoes</span>
+              </button>
+            </div>
+
+            <!-- Year slider -->
+            <div id="year-slider-bar">
+              <span id="year-label" class="year-label">2019</span>
+              <input type="range" id="year-slider" min="2000" max="2024" step="1" value="2019"
+                aria-label="Year" class="year-slider-input" />
+              <div id="year-ticks" class="year-ticks" aria-hidden="true"></div>
+            </div>
+
+            <!-- Event list -->
+            <div id="event-list" role="list" aria-label="Events" aria-live="polite"></div>
+
+            <!-- Now listening -->
+            <div id="now-listening" class="now-listening glass-panel" hidden>
+              <div id="now-listening-text" class="now-listening-text"></div>
+              <div id="danger-bar" class="danger-bar" role="meter" aria-label="Danger level" aria-valuemin="1" aria-valuemax="5"></div>
+            </div>
           </aside>
-          <div class="jukebox-main">
-            <div class="map-wrapper" id="jukebox-map-wrapper">
-              <canvas id="jukebox-canvas" role="application" aria-label="Earth data visualization — Jukebox mode"></canvas>
-              <canvas id="jukebox-scanner" class="scanner-canvas" aria-hidden="true"></canvas>
+        </div>
+
+        <!-- Mic button -->
+        <button id="mic-btn" class="mic-btn" aria-label="Ask Earth Jukebox" aria-pressed="false">
+          <span class="mic-icon" aria-hidden="true">🎙️</span>
+        </button>
+      </section>
+
+      <!-- ===== CONTINENTS PAGE ===== -->
+      <section id="continents-page" class="app-page" role="tabpanel" aria-labelledby="tab-continents" hidden>
+        <div id="continents-layout">
+          <h1 class="page-title" data-i18n="continents.title">Continents</h1>
+          <div id="continent-buttons" class="continent-buttons" role="group">
+            <button class="continent-btn option-card" data-continent="africa">
+              <span class="option-icon">🌍</span><span class="option-label" data-i18n="continent.africa">Africa</span>
+            </button>
+            <button class="continent-btn option-card" data-continent="asia">
+              <span class="option-icon">🌏</span><span class="option-label" data-i18n="continent.asia">Asia</span>
+            </button>
+            <button class="continent-btn option-card" data-continent="europe">
+              <span class="option-icon">🗺</span><span class="option-label" data-i18n="continent.europe">Europe</span>
+            </button>
+            <button class="continent-btn option-card" data-continent="northAmerica">
+              <span class="option-icon">🌎</span><span class="option-label" data-i18n="continent.northAmerica">N. America</span>
+            </button>
+            <button class="continent-btn option-card" data-continent="southAmerica">
+              <span class="option-icon">🌎</span><span class="option-label" data-i18n="continent.southAmerica">S. America</span>
+            </button>
+            <button class="continent-btn option-card" data-continent="oceania">
+              <span class="option-icon">🌏</span><span class="option-label" data-i18n="continent.oceania">Oceania</span>
+            </button>
+          </div>
+          <div id="continent-player" class="glass-panel" hidden>
+            <div id="continent-name" class="continent-player-name"></div>
+            <div id="continent-year-bar">
+              <span id="continent-year-label" class="year-label">2000</span>
+              <input type="range" id="continent-year-slider" min="2000" max="2024" step="1" value="2000"
+                aria-label="Year" class="year-slider-input" />
             </div>
-            <div class="player-bar">
-              <div class="player-controls">
-                <button id="prev-frame-btn" class="ctrl-btn" aria-label="Previous frame">⏮</button>
-                <button id="play-btn" class="ctrl-btn play-btn" aria-label="Play" aria-pressed="false">▶</button>
-                <button id="next-frame-btn" class="ctrl-btn" aria-label="Next frame">⏭</button>
-                <button id="compare-btn" class="ctrl-btn" aria-label="Compare first vs last">⇆ Compare</button>
-              </div>
-              <div class="year-slider-wrap">
-                <input type="range" id="year-slider" class="year-slider" min="0" max="7" step="1" value="0" aria-label="Year" />
-                <div id="year-labels" class="year-labels"></div>
-              </div>
-              <div class="speed-controls" role="group" aria-label="Playback speed">
-                <button class="speed-btn" data-speed="0.5" aria-label="Half speed">0.5×</button>
-                <button class="speed-btn active" data-speed="1" aria-label="Normal speed">1×</button>
-                <button class="speed-btn" data-speed="2" aria-label="Double speed">2×</button>
-              </div>
-              <div class="describe-btn-wrap">
-                <button id="describe-btn" class="ctrl-btn">Describe this frame</button>
-              </div>
-            </div>
-            <div id="jukebox-status" class="status-bar" aria-live="polite" aria-atomic="true"></div>
+            <button id="continent-play-btn" class="btn btn-primary" data-i18n="continents.play">▶ Play song</button>
+            <div id="continent-status" aria-live="polite"></div>
           </div>
         </div>
       </section>
 
-      <!-- Explore -->
-      <section id="panel-explore" class="tab-panel" role="tabpanel" aria-labelledby="tab-explore" hidden>
-        <p class="rotate-hint" aria-hidden="true">Rotate for a bigger map</p>
-        <div class="explore-layout">
-          <div class="map-wrapper fullscreen" id="explore-map-wrapper">
-            <canvas id="explore-canvas" role="application"
-              aria-label="Interactive Earth data map — move mouse or touch to hear data"
-              aria-describedby="explore-instructions"
-              tabindex="0"></canvas>
-            <div id="explore-tooltip" class="explore-tooltip" aria-hidden="true"></div>
-            <div id="explore-cursor" class="explore-cursor" aria-hidden="true"></div>
-          </div>
-          <div class="explore-panel">
-            <div id="explore-instructions" class="sr-only">
-              Move mouse or touch to explore data. Double-tap or press Enter to hear location description.
-              Long-press to compare first and last year. Arrow keys navigate, N for next beacon, H for help.
-            </div>
-            <label class="panel-label">Theme
-              <select id="explore-theme" aria-label="Select theme"></select>
-            </label>
-            <label class="panel-label">Year
-              <select id="explore-year" aria-label="Select year"></select>
-            </label>
-            <button id="screen-off-btn" class="ctrl-btn">Screen off</button>
-            <div id="explore-status" class="status-bar" aria-live="polite" aria-atomic="true"></div>
-          </div>
+      <!-- ===== GUIDE PAGE (How it sounds) ===== -->
+      <section id="how-page" class="app-page" role="tabpanel" aria-labelledby="tab-how" hidden>
+        <div id="guide-layout" class="guide-layout">
+          <h1 class="page-title" data-i18n="how.title">How it sounds</h1>
+          <div id="guide-cards" class="guide-cards"></div>
         </div>
-        <div id="screen-off-overlay" class="screen-off-overlay" hidden></div>
       </section>
 
-      <!-- Guide -->
-      <section id="panel-guide" class="tab-panel" role="tabpanel" aria-labelledby="tab-guide" hidden>
-        <div class="guide-layout">
-          <div class="guide-info">
-            <h2>Guide — Find Without Eyes</h2>
-            <p>Beacons mark anomalies. Navigate by sound and touch. Keyboard: arrows move 5°, Shift+arrow = 1°, N = next beacon, Space = play point, Enter = describe, Y = next year, H = help.</p>
-            <div class="guide-controls">
-              <label class="panel-label">Theme
-                <select id="guide-theme" aria-label="Select theme"></select>
-              </label>
-              <label class="panel-label">Year
-                <select id="guide-year" aria-label="Select year"></select>
-              </label>
-              <button id="guide-screen-off-btn" class="ctrl-btn guide-screen-off">Screen off</button>
-            </div>
-          </div>
-          <div class="map-wrapper" id="guide-map-wrapper">
-            <canvas id="guide-canvas" role="application"
-              aria-label="Guide mode — find anomalies by sound"
-              tabindex="0"></canvas>
-            <div id="guide-cursor" class="explore-cursor" aria-hidden="true"></div>
-          </div>
+      <!-- ===== INTRO PAGE (hidden, shown on first visit) ===== -->
+      <section id="intro-page" class="app-page" hidden>
+        <div class="intro-layout">
+          <h1 class="intro-title" data-i18n="intro.title">Welcome to Earth Jukebox</h1>
+          <p class="intro-body" data-i18n="intro.body"></p>
+          <button id="intro-next-btn" class="btn btn-primary" data-i18n="intro.next">Go to Globe →</button>
         </div>
-        <div id="guide-screen-off-overlay" class="screen-off-overlay" hidden></div>
-        <div id="guide-status" class="status-bar" aria-live="polite" aria-atomic="true"></div>
       </section>
+
     </main>
 
-    <!-- Settings drawer -->
-    <div class="settings-row" role="group" aria-label="Settings">
-      <label class="settings-label">
-        Vibration
-        <button id="vibration-toggle" class="ctrl-btn" aria-pressed="true">On</button>
-      </label>
-      <label class="settings-label">
-        Intensity
-        <select id="vibration-intensity" aria-label="Vibration intensity">
-          <option value="0.6">Soft</option>
-          <option value="1" selected>Normal</option>
-          <option value="1.6">Strong</option>
-        </select>
-      </label>
-      <button id="test-vibration-btn" class="ctrl-btn">Test vibration</button>
-      <span id="vibration-support-msg" class="settings-msg"></span>
-      <label class="settings-label">
-        Voice
-        <select id="voice-lang" aria-label="Voice language">
-          <option value="en">English</option>
-          <option value="ru">Русский</option>
-        </select>
-      </label>
-    </div>
-  </div>
+    <!-- Resume sound button -->
+    <button id="resume-btn" class="resume-btn btn-glass" hidden aria-label="Tap to resume sound">
+      🔇 <span id="resume-btn-text">Tap to resume sound</span>
+    </button>
 
-  <div id="aria-live-region" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+  </div><!-- /#app-shell -->
 
   <script type="module" src="/src/main.js"></script>
 </body>
