@@ -18,25 +18,44 @@
 
     <div class="start-content">
       <div class="start-logo">
-        <span class="start-logo-nasa">NASA</span>
+        <span class="start-logo-nasa">NASA · Space Apps Challenge 2026</span>
         <span class="start-logo-title">Earth Jukebox</span>
-        <span class="start-logo-sub">Touch &amp; Hear</span>
+        <span class="start-logo-sub">Touch &amp; Hear the Planet</span>
       </div>
 
-      <div class="start-badge">Space Apps Challenge 2026</div>
+      <!-- Step 1: Language picker -->
+      <div id="lang-picker" class="lang-picker" role="group" aria-label="Choose language">
+        <p class="lang-label" id="lang-label-text">Choose language · Выберите язык · 选择语言</p>
+        <div class="lang-buttons">
+          <button class="lang-btn" data-lang="ru" aria-label="Russian — Русский">
+            <span class="lang-num">1</span>
+            <span class="lang-name">Русский</span>
+          </button>
+          <button class="lang-btn" data-lang="en" aria-label="English">
+            <span class="lang-num">2</span>
+            <span class="lang-name">English</span>
+          </button>
+          <button class="lang-btn" data-lang="zh" aria-label="Chinese — 中文">
+            <span class="lang-num">3</span>
+            <span class="lang-name">中文</span>
+          </button>
+        </div>
+      </div>
 
-      <button id="start-btn" class="start-btn" aria-label="Tap to start — sound on">
-        <span class="start-btn-icon" aria-hidden="true">▶</span>
-        <span>Tap to start — sound on</span>
-      </button>
-
-      <p class="start-hint">Best with headphones · Turn up media volume</p>
-      <p class="start-hint-iphone">iPhone: Switch off silent mode</p>
-
-      <label class="start-sr-label">
-        <input type="checkbox" id="sr-checkbox" />
-        I use a screen reader
-      </label>
+      <!-- Step 2: Start button (shown after language selected) -->
+      <div id="start-step" class="start-step" hidden>
+        <p class="lang-chosen-msg" id="lang-chosen-msg"></p>
+        <button id="start-btn" class="start-btn" aria-label="Start — sound on">
+          <span class="start-btn-icon" aria-hidden="true">▶</span>
+          <span id="start-btn-text">Start — sound on</span>
+        </button>
+        <p class="start-hint" id="start-hint-text">Best with headphones · Turn up media volume</p>
+        <p class="start-hint-iphone" id="start-hint-iphone">iPhone: Switch off silent mode</p>
+        <label class="start-sr-label">
+          <input type="checkbox" id="sr-checkbox" />
+          <span id="sr-label-text">I use a screen reader</span>
+        </label>
+      </div>
     </div>
   </div>
 

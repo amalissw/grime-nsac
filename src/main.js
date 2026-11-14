@@ -17,32 +17,100 @@ let currentThemeIdx = 0;
 let currentFrameIdx = 0;
 let currentFrameCanvas = null;
 
+// ===== Language picker =====
+
+const LANG_STRINGS = {
+  ru: {
+    start: 'Начать — звук включён',
+    hint: 'Лучше в наушниках · Увеличьте громкость',
+    hintIphone: 'iPhone: Выключите беззвучный режим',
+    srLabel: 'Я использую скринридер',
+    chosen: '🇷🇺 Русский выбран',
+  },
+  en: {
+    start: 'Tap to start — sound on',
+    hint: 'Best with headphones · Turn up media volume',
+    hintIphone: 'iPhone: Switch off silent mode',
+    srLabel: 'I use a screen reader',
+    chosen: '🇬🇧 English selected',
+  },
+  zh: {
+    start: '点击开始 — 声音已开',
+    hint: '建议使用耳机 · 请调高音量',
+    hintIphone: 'iPhone：关闭静音模式',
+    srLabel: '我使用屏幕阅读器',
+    chosen: '🇨🇳 已选中文',
+  },
+};
+
+function initLangPicker() {
+  const picker = document.getElementById('lang-picker');
+  if (!picker) return;
+
+  picker.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => pickLang(btn.dataset.lang));
+  });
+
+  document.addEventListener('keydown', e => {
+    if (document.getElementById('lang-picker')?.hidden) return;
+    if (e.key === '1') pickLang('ru');
+    else if (e.key === '2') pickLang('en');
+    else if (e.key === '3') pickLang('zh');
+  });
+}
+
+function pickLang(lang) {
+  if (!LANG_STRINGS[lang]) lang = 'en';
+  setLanguage(lang);
+
+  // Mark selected button
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.lang === lang);
+  });
+
+  const strings = LANG_STRINGS[lang];
+  const startBtnText = document.getElementById('start-btn-text');
+  if (startBtnText) startBtnText.textContent = strings.start;
+  const hintEl = document.getElementById('start-hint-text');
+  if (hintEl) hintEl.textContent = strings.hint;
+  const hintIphone = document.getElementById('start-hint-iphone');
+  if (hintIphone) hintIphone.textContent = strings.hintIphone;
+  const srLabel = document.getElementById('sr-label-text');
+  if (srLabel) srLabel.textContent = strings.srLabel;
+  const chosenMsg = document.getElementById('lang-chosen-msg');
+  if (chosenMsg) chosenMsg.textContent = strings.chosen;
+
+  // Show start step, hide lang picker
+  const picker = document.getElementById('lang-picker');
+  const startStep = document.getElementById('start-step');
+  if (picker) picker.hidden = true;
+  if (startStep) startStep.hidden = false;
+
+  document.getElementById('start-btn')?.focus();
+}
+
 // ===== Boot =====
 
 async function boot() {
-  // Load data in background while start screen is visible
-  const { themes: t } = await loadData();
-  themes = t;
-
-  // Show demo banner if any placeholder themes active
-  const hasPlaceholder = themes.some(th => th.isPlaceholder);
-  document.getElementById('demo-banner').hidden = !hasPlaceholder;
-
-  // Start hero animation
+  // Start hero animation immediately (runs behind lang picker)
   const heroCanvas = document.getElementById('hero-canvas');
   if (heroCanvas) {
     initHeroAnimation(heroCanvas).catch(() => {});
   }
 
-  // Init speech
+  // Init lang picker
   initSpeech();
-  if (hasPlaceholder) {
-    setTimeout(() => speak('Demo data is active — not NASA measurements.'), 2000);
-  }
+  initLangPicker();
 
-  // Wire up start button
+  // Load data in background
+  const { themes: t } = await loadData();
+  themes = t;
+
+  const hasPlaceholder = themes.some(th => th.isPlaceholder);
+  document.getElementById('demo-banner').hidden = !hasPlaceholder;
+
+  // Wire up start button (it's hidden until lang is chosen)
   document.getElementById('start-btn').addEventListener('click', onStart, { once: true });
-  document.getElementById('start-btn').addEventListener('pointerup', onStart, { once: true });
   document.getElementById('sr-checkbox').addEventListener('change', e => {
     if (e.target.checked) setScreenReaderMode(true);
   });

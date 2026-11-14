@@ -148,10 +148,14 @@ export function playUiClick() {
   instruments.ui.triggerAttackRelease('E5', '32n');
 }
 
+let lastBeaconTime = 0;
 export function playBeaconPulse(panValue, freq = 880) {
   if (!instruments) return;
+  const now = Tone.now();
+  if (now - lastBeaconTime < 0.15) return; // debounce
+  lastBeaconTime = now;
   instruments.beaconPanner.pan.rampTo(panValue, 0.05);
-  instruments.beacon.triggerAttackRelease(freq, '8n');
+  instruments.beacon.triggerAttackRelease(freq, '8n', now + 0.01);
 }
 
 export function playAnomaly(noteFreq) {
