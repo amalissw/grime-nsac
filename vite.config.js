@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: './',
+  base: '/grime-nsac/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
