@@ -198,12 +198,13 @@ button {
   text-decoration: none;
   white-space: nowrap;
 }
+.page-tab.active,
 .page-tab[aria-current="page"] {
   color: var(--accent);
   background: rgba(37,99,235,.08);
   font-weight: 600;
 }
-.page-tab:hover:not([aria-current="page"]) { color: var(--text); background: rgba(0,0,0,.04); }
+.page-tab:hover:not(.active):not([aria-current="page"]) { color: var(--text); background: rgba(0,0,0,.04); }
 
 #top-bar-actions {
   display: flex;
@@ -235,9 +236,12 @@ button {
   flex: 1;
   overflow: hidden;
   position: relative;
+  display: flex;
 }
 .page { width: 100%; height: 100%; display: none; }
 .page.active { display: flex; }
+.app-page { display: none; width: 100%; height: 100%; }
+.app-page:not([hidden]) { display: flex; }
 
 /* ---- Start Screen ---- */
 #start-screen {
@@ -915,6 +919,110 @@ button {
 #continent-year-bar .year-label { min-width: 40px; }
 #continent-status { font-size: 0.85rem; color: var(--text-2); min-height: 20px; }
 #guide-layout { display: flex; flex-direction: column; }
+
+/* ---- Bird bar (continents page) ---- */
+.bird-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bird-bar-label {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+#bird-bar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.bird-icon {
+  font-size: 1.1rem;
+  transition: opacity 400ms;
+}
+.bird-icon.inactive { opacity: 0.2; filter: grayscale(1); }
+.bird-icon.active   { opacity: 1; }
+.bird-count-label   { font-size: 0.75rem; color: var(--text-2); }
+
+.continent-danger-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.continent-danger-chip {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 0.8125rem/1 'Manrope', sans-serif;
+  color: #fff;
+  transition: background 500ms;
+}
+.continent-key-label {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+/* ---- Mic button states ---- */
+.mic-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(37,99,235,.4);
+  transition: transform 150ms, box-shadow 150ms;
+  z-index: 90;
+  cursor: pointer;
+  border: none;
+}
+.mic-btn:hover { transform: scale(1.06); }
+.mic-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+.mic-btn.mic-listening {
+  background: #DC2626;
+  box-shadow: 0 0 0 0 rgba(220,38,38,.4);
+  animation: micPulse 1s ease-in-out infinite;
+}
+.mic-btn.mic-thinking {
+  background: #FACC15;
+  color: #0F172A;
+  animation: micSpin 1s linear infinite;
+}
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.4); }
+  50%        { box-shadow: 0 0 0 16px rgba(220,38,38,0); }
+}
+@keyframes micSpin {
+  to { transform: rotate(10deg) scale(1.05); }
+}
+
+/* ---- Demo banner ---- */
+.demo-banner {
+  position: fixed;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 18px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background: rgba(250,204,21,.18);
+  border: 1px solid rgba(250,204,21,.5);
+  color: #92400E;
+  z-index: 80;
+  white-space: nowrap;
+}
 
 /* ---- Motion preferences ---- */
 @media (prefers-reduced-motion: reduce) {

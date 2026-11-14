@@ -18,6 +18,8 @@ import { loadAllData } from './data/loader.js';
 import { setData } from './data/query.js';
 import { initGlobe } from './pages/globe.js';
 import { initMicButton } from './ui/mic-button.js';
+import { initContinentsPage, buildContinentsPage } from './pages/continents.js';
+import { initAssistant } from './audio/assistant.js';
 
 // ── i18n strings ────────────────────────────────────────────────────────────
 const I18N = {
@@ -445,10 +447,7 @@ function setupContinentPage() {
     setState({ continentsPage: { ...state.continentsPage, year: yr } });
   });
 
-  playBtn?.addEventListener('click', () => {
-    // Continent song playback wired in Stage 8
-    showToast('Continent songs coming in Stage 8!');
-  });
+  // Playback handled by initContinentsPage() in continents.js
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
@@ -475,6 +474,7 @@ async function boot() {
   setupResumeButton();
   setupDemoBanner();
   setupContinentPage();
+  buildContinentsPage();
 
   // Subscribe to page changes from router
   let _globeInited = false;
@@ -510,6 +510,12 @@ async function boot() {
 
   // Init mic button
   initMicButton();
+
+  // Init continents page music player
+  initContinentsPage();
+
+  // Init voice assistant
+  initAssistant();
 
   // Load data in background
   loadAllData().then(data => {
