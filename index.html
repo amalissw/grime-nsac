@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <title>Earth Jukebox — Touch & Hear</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="/src/ui/styles.css" />
+</head>
+<body>
+  <a href="#map" class="skip-link">Skip to map</a>
+
+  <!-- Start screen overlay -->
+  <div id="start-screen" class="start-screen" role="dialog" aria-modal="true" aria-label="Welcome to Earth Jukebox">
+    <!-- Three.js hero animation canvas -->
+    <canvas id="hero-canvas"></canvas>
+
+    <div class="start-content">
+      <div class="start-logo">
+        <span class="start-logo-nasa">NASA</span>
+        <span class="start-logo-title">Earth Jukebox</span>
+        <span class="start-logo-sub">Touch &amp; Hear</span>
+      </div>
+
+      <div class="start-badge">Space Apps Challenge 2026</div>
+
+      <button id="start-btn" class="start-btn" aria-label="Tap to start — sound on">
+        <span class="start-btn-icon" aria-hidden="true">▶</span>
+        <span>Tap to start — sound on</span>
+      </button>
+
+      <p class="start-hint">Best with headphones · Turn up media volume</p>
+      <p class="start-hint-iphone">iPhone: Switch off silent mode</p>
+
+      <label class="start-sr-label">
+        <input type="checkbox" id="sr-checkbox" />
+        I use a screen reader
+      </label>
+    </div>
+  </div>
+
+  <!-- Demo data banner -->
+  <div id="demo-banner" class="demo-banner" role="status" aria-live="polite" hidden>
+    ⚠ Demo data — not NASA measurements
+  </div>
+
+  <!-- Resume sound button (shown after returning from background) -->
+  <button id="resume-btn" class="resume-btn" hidden aria-label="Tap to resume sound">
+    🔇 Tap to resume sound
+  </button>
+
+  <!-- Main app -->
+  <div id="app" class="app" hidden>
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <span class="header-logo" aria-label="Earth Jukebox">🌍 Earth Jukebox</span>
+      </div>
+      <nav class="tab-nav" role="tablist" aria-label="Modes">
+        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="jukebox" id="tab-jukebox">Jukebox</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="explore" id="tab-explore">Explore</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="guide" id="tab-guide">Guide</button>
+        <a href="/how-it-sounds.html" class="tab-link" target="_blank">How it sounds ↗</a>
+      </nav>
+      <div class="header-controls">
+        <button id="mute-btn" class="ctrl-btn" aria-label="Mute" aria-pressed="false">🔊</button>
+        <input type="range" id="volume-slider" class="volume-slider" min="-40" max="0" step="1" value="-12" aria-label="Volume" />
+      </div>
+    </header>
+
+    <!-- Tab panels -->
+    <main>
+      <!-- Jukebox -->
+      <section id="panel-jukebox" class="tab-panel active" role="tabpanel" aria-labelledby="tab-jukebox">
+        <div class="jukebox-layout">
+          <aside class="track-list" aria-label="Themes">
+            <div id="track-cards"></div>
+          </aside>
+          <div class="jukebox-main">
+            <div class="map-wrapper" id="jukebox-map-wrapper">
+              <canvas id="jukebox-canvas" role="application" aria-label="Earth data visualization — Jukebox mode"></canvas>
+              <canvas id="jukebox-scanner" class="scanner-canvas" aria-hidden="true"></canvas>
+            </div>
+            <div class="player-bar">
+              <div class="player-controls">
+                <button id="prev-frame-btn" class="ctrl-btn" aria-label="Previous frame">⏮</button>
+                <button id="play-btn" class="ctrl-btn play-btn" aria-label="Play" aria-pressed="false">▶</button>
+                <button id="next-frame-btn" class="ctrl-btn" aria-label="Next frame">⏭</button>
+                <button id="compare-btn" class="ctrl-btn" aria-label="Compare first vs last">⇆ Compare</button>
+              </div>
+              <div class="year-slider-wrap">
+                <input type="range" id="year-slider" class="year-slider" min="0" max="7" step="1" value="0" aria-label="Year" />
+                <div id="year-labels" class="year-labels"></div>
+              </div>
+              <div class="speed-controls" role="group" aria-label="Playback speed">
+                <button class="speed-btn" data-speed="0.5" aria-label="Half speed">0.5×</button>
+                <button class="speed-btn active" data-speed="1" aria-label="Normal speed">1×</button>
+                <button class="speed-btn" data-speed="2" aria-label="Double speed">2×</button>
+              </div>
+              <div class="describe-btn-wrap">
+                <button id="describe-btn" class="ctrl-btn">Describe this frame</button>
+              </div>
+            </div>
+            <div id="jukebox-status" class="status-bar" aria-live="polite" aria-atomic="true"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Explore -->
+      <section id="panel-explore" class="tab-panel" role="tabpanel" aria-labelledby="tab-explore" hidden>
+        <p class="rotate-hint" aria-hidden="true">Rotate for a bigger map</p>
+        <div class="explore-layout">
+          <div class="map-wrapper fullscreen" id="explore-map-wrapper">
+            <canvas id="explore-canvas" role="application"
+              aria-label="Interactive Earth data map — move mouse or touch to hear data"
+              aria-describedby="explore-instructions"
+              tabindex="0"></canvas>
+            <div id="explore-tooltip" class="explore-tooltip" aria-hidden="true"></div>
+            <div id="explore-cursor" class="explore-cursor" aria-hidden="true"></div>
+          </div>
+          <div class="explore-panel">
+            <div id="explore-instructions" class="sr-only">
+              Move mouse or touch to explore data. Double-tap or press Enter to hear location description.
+              Long-press to compare first and last year. Arrow keys navigate, N for next beacon, H for help.
+            </div>
+            <label class="panel-label">Theme
+              <select id="explore-theme" aria-label="Select theme"></select>
+            </label>
+            <label class="panel-label">Year
+              <select id="explore-year" aria-label="Select year"></select>
+            </label>
+            <button id="screen-off-btn" class="ctrl-btn">Screen off</button>
+            <div id="explore-status" class="status-bar" aria-live="polite" aria-atomic="true"></div>
+          </div>
+        </div>
+        <div id="screen-off-overlay" class="screen-off-overlay" hidden></div>
+      </section>
+
+      <!-- Guide -->
+      <section id="panel-guide" class="tab-panel" role="tabpanel" aria-labelledby="tab-guide" hidden>
+        <div class="guide-layout">
+          <div class="guide-info">
+            <h2>Guide — Find Without Eyes</h2>
+            <p>Beacons mark anomalies. Navigate by sound and touch. Keyboard: arrows move 5°, Shift+arrow = 1°, N = next beacon, Space = play point, Enter = describe, Y = next year, H = help.</p>
+            <div class="guide-controls">
+              <label class="panel-label">Theme
+                <select id="guide-theme" aria-label="Select theme"></select>
+              </label>
+              <label class="panel-label">Year
+                <select id="guide-year" aria-label="Select year"></select>
+              </label>
+              <button id="guide-screen-off-btn" class="ctrl-btn guide-screen-off">Screen off</button>
+            </div>
+          </div>
+          <div class="map-wrapper" id="guide-map-wrapper">
+            <canvas id="guide-canvas" role="application"
+              aria-label="Guide mode — find anomalies by sound"
+              tabindex="0"></canvas>
+            <div id="guide-cursor" class="explore-cursor" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div id="guide-screen-off-overlay" class="screen-off-overlay" hidden></div>
+        <div id="guide-status" class="status-bar" aria-live="polite" aria-atomic="true"></div>
+      </section>
+    </main>
+
+    <!-- Settings drawer -->
+    <div class="settings-row" role="group" aria-label="Settings">
+      <label class="settings-label">
+        Vibration
+        <button id="vibration-toggle" class="ctrl-btn" aria-pressed="true">On</button>
+      </label>
+      <label class="settings-label">
+        Intensity
+        <select id="vibration-intensity" aria-label="Vibration intensity">
+          <option value="0.6">Soft</option>
+          <option value="1" selected>Normal</option>
+          <option value="1.6">Strong</option>
+        </select>
+      </label>
+      <button id="test-vibration-btn" class="ctrl-btn">Test vibration</button>
+      <span id="vibration-support-msg" class="settings-msg"></span>
+      <label class="settings-label">
+        Voice
+        <select id="voice-lang" aria-label="Voice language">
+          <option value="en">English</option>
+          <option value="ru">Русский</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div id="aria-live-region" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

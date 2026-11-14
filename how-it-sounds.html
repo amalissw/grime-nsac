@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How it sounds — Earth Jukebox</title>
+  <link rel="stylesheet" href="/src/ui/styles.css" />
+  <style>
+    body { padding: 32px; max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 28px; color: var(--accent2); margin-bottom: 8px; }
+    .subtitle { color: var(--text-dim); margin-bottom: 32px; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+    th { text-align: left; border-bottom: 2px solid var(--border); padding: 10px 12px; color: var(--accent); font-size: 13px; }
+    td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+    td:first-child { font-weight: 600; color: var(--accent2); white-space: nowrap; }
+    .listen-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--accent); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+    .listen-btn:hover { background: var(--border); }
+    .disclaimer { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; color: var(--text-dim); font-size: 13px; line-height: 1.7; margin-bottom: 32px; }
+    .back-link { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 24px; }
+    .back-link:hover { text-decoration: underline; }
+    h2 { color: var(--text); font-size: 18px; margin: 32px 0 12px; }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-link">← Back to Earth Jukebox</a>
+  <h1>How it sounds</h1>
+  <p class="subtitle">Earth Jukebox turns satellite data into music. Here's how every sound maps to the data.</p>
+
+  <div class="disclaimer">
+    <strong>Honest note:</strong> The sound is built from pixel colors in NASA visualization images, matched against the layer's color legend.
+    This is an interpretation of the visualization, not a calibrated measurement. The same data shown with a different color scale would produce different sounds.
+  </div>
+
+  <h2>Sound mapping table</h2>
+  <table id="mapping-table">
+    <thead>
+      <tr>
+        <th>Role</th>
+        <th>What controls it</th>
+        <th>Sound</th>
+        <th>Listen</th>
+      </tr>
+    </thead>
+    <tbody id="mapping-tbody"></tbody>
+  </table>
+
+  <h2>Data sources</h2>
+  <div id="sources"></div>
+
+  <script type="module">
+    import { MAPPING } from '/src/audio/mapping.js';
+    import { unlockAudio } from '/src/audio/engine.js';
+    import { initInstruments, playCoast, playYearTick, playUiClick, playBeaconPulse, playEdgeBump, playWelcome, playAnomaly } from '/src/audio/instruments.js';
+
+    const tbody = document.getElementById('mapping-tbody');
+
+    const DEMOS = {
+      ocean: () => { const i = window.__ins; i.ocean.triggerAttackRelease('C2', '2n'); },
+      land: () => { const i = window.__ins; i.land.triggerAttackRelease('E4', '8n'); },
+      fire: () => { const i = window.__ins; i.fire.triggerAttackRelease('16n'); },
+      anomaly: () => playAnomaly(311),
+      coast: () => playCoast(),
+      beacon: () => playBeaconPulse(0, 880),
+      yearTick: () => playYearTick(),
+      yearMood: () => playWelcome(),
+      ui: () => playUiClick(),
+    };
+
+    let audioReady = false;
+
+    async function ensureAudio() {
+      if (audioReady) return;
+      await unlockAudio();
+      window.__ins = initInstruments();
+      audioReady = true;
+    }
+
+    Object.entries(MAPPING).forEach(([id, m]) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${m.role}</td>
+        <td>${m.description.split('.')[0]}</td>
+        <td>${m.description}</td>
+        <td><button class="listen-btn" aria-label="Listen to ${m.role}">▶ Listen</button></td>
+      `;
+      tr.querySelector('.listen-btn').addEventListener('click', async () => {
+        await ensureAudio();
+        DEMOS[id]?.();
+      });
+      tbody.appendChild(tr);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "_comment": "Real NASA data: add images to public/data/<theme>/, then update this file. See public/data/README.md",
+  "mask": "mask/land_2048x1024.png",
+  "regions": "regions.json",
+  "themes": []
+}
