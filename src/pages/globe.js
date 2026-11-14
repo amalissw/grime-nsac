@@ -13,6 +13,7 @@ import { vibrate } from '../audio/haptics.js';
 import { say } from '../audio/speech.js';
 import { showToast } from '../ui/shell.js';
 import { DANGER_COLORS } from '../config.js';
+import { startListening } from '../audio/listen.js';
 
 // ── Danger color CSS vars ────────────────────────────────────────────────────
 const DANGER_CSS = ['#22C55E', '#A3E635', '#FACC15', '#F97316', '#DC2626'];
@@ -116,8 +117,14 @@ export function initGlobe() {
   canvas.addEventListener('keydown', onGlobeKey);
 
   // Listen to state
-  subscribe('layer', layer => { _currentLayer = layer; updateLayer(); });
-  subscribe('year', year => { _currentYear = year; updateLayer(); });
+  subscribe('layer', layer => { _currentLayer = layer; updateLayer(); updateEventList(); });
+  subscribe('year', year => {
+    _currentYear = year;
+    updateLayer();
+    updateEventList();
+    // Update sound if currently listening
+    import('../audio/listen.js').then(m => m.onYearChange(year)).catch(() => {});
+  });
   subscribe('selection', sel => { if (sel) flyTo(sel.lat, sel.lon); });
 
   // Listen for data ready
@@ -269,6 +276,7 @@ function handleGlobeTap(lat, lon) {
   // Play sound
   vibrate('select');
   playEarcon('select');
+  startListening(lat, lon, state.layer, state.year);
 
   // Speak
   const msg = buildPointMsg(pt);

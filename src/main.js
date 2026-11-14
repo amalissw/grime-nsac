@@ -17,6 +17,7 @@ import { vibrate } from './audio/haptics.js';
 import { loadAllData } from './data/loader.js';
 import { setData } from './data/query.js';
 import { initGlobe } from './pages/globe.js';
+import { initMicButton } from './ui/mic-button.js';
 
 // ── i18n strings ────────────────────────────────────────────────────────────
 const I18N = {
@@ -506,6 +507,9 @@ async function boot() {
 
   // Build guide cards
   buildGuideCards();
+
+  // Init mic button
+  initMicButton();
 
   // Load data in background
   loadAllData().then(data => {
